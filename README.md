@@ -148,18 +148,26 @@ choice the OS preference wins.
 
 ---
 
-## Testing against a real wallet
+## Connecting a real wallet
 
-Local wallet on `:5173`, dApp on `:5174`.
+**The popup path does not work against the hosted wallet.** `sphere.unicity.network/connect?origin=…`
+answers a CloudFront **403** before the wallet is ever reached, so clicking Connect from a plain browser
+tab opens a window showing an error page. This is a property of the hosted wallet, not of this dApp — the
+app now detects the situation and says so before you click.
 
-Against the hosted wallet, **iframe is the only path that works** — load the dApp as a custom agent at
-`https://sphere.unicity.network/agents/custom`. The popup path returns **403** against the hosted wallet.
+Three routes that do work:
+
+| Route | How | Notes |
+|---|---|---|
+| **Extension** (P2) | Install from [sphere-extension releases](https://github.com/unicity-sphere/sphere-extension/releases), unzip, load unpacked at `chrome://extensions` | Best path. The session survives page navigations, and `silent` auto-connect restores it on every load. |
+| **Custom agent** (P1) | Open `https://sphere.unicity.network/agents/custom` and point it at your dApp URL | Runs the dApp in Sphere's own iframe. One unlock serves every framed app. |
+| **Local wallet** (P3) | Run the [sphere](https://github.com/unicity-sphere/sphere) wallet on `:5173`, set `VITE_WALLET_URL=http://localhost:5173` | A locally run wallet does serve `/connect`. The popup must stay open. |
+
+The demo wallet needs none of this and exercises the identical protocol path.
 
 To list the app in the Sphere desktop, open a PR against
 [`unicity-sphere/sphere-apps`](https://github.com/unicity-sphere/sphere-apps) adding an entry to
 `apps.json`.
-
----
 
 ## Before production
 

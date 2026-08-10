@@ -38,6 +38,7 @@ import { autoConnect, hasExtension, isInIframe } from "@unicitylabs/sphere-sdk/c
 import { DAPP, NETWORK, REQUIRED_SCOPES, STORAGE, SUBSCRIBED_EVENTS, WALLET_URL } from "../lib/config";
 import { classifyRequestError, describeConnectFailure } from "../lib/connectErrors";
 import { dropDemoTransport, getDemoTransport } from "./demoHost";
+import { popupPathIsBlocked } from "./environment";
 
 export type TransportKind = "iframe" | "extension" | "popup" | "demo" | null;
 
@@ -246,7 +247,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       await runConnect(false);
     } catch (err) {
       sessionStorage.removeItem(STORAGE.popupSession);
-      setError(describeConnectFailure(err));
+      // A popup against the hosted wallet never reaches a wallet at all — the
+      // CDN answers 403 — so the SDK's timeout is a true but useless message.
+      setError(
+        popupPathIsBlocked()
+          ? "The hosted Sphere wallet does not serve the popup path (403 at the CDN). Install the Sphere extension, or run this dApp inside Sphere as a custom agent — see the options below."
+          : describeConnectFailure(err),
+      );
     } finally {
       setConnecting(false);
     }

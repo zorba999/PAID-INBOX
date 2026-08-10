@@ -235,6 +235,58 @@
   max-width: 42ch;
 }
 
+/* Actionable copy for the blocked-popup path — shown before the user clicks
+   Connect and discovers a CloudFront error page. */
+.pathnote {
+  display: grid;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 62ch;
+  margin-top: 0.5rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: var(--step--1);
+}
+
+.pathnote p {
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.pathnote__list {
+  display: grid;
+  gap: 0.85rem;
+  list-style: none;
+}
+
+.pathnote__list li {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  gap: 0.7rem;
+  align-items: start;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+.pathnote__list b {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.pathnote__n {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+  color: var(--accent);
+  font-size: var(--step--2);
+}
+
 .idchip {
   position: relative;
 }

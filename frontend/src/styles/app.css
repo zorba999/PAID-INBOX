@@ -65,11 +65,22 @@
   margin-left: auto;
 }
 
-/* produx-style vertical roll on hover */
+/* produx-style vertical roll on hover.
+ *
+ * The roll window and both copies must share ONE height, and it has to clear
+ * the glyph box — uppercase mono at 12px wants ~17px, so `height: 1em` clipped
+ * the caps and the descenders of the brackets. It also broke the animation:
+ * `translateY(100%)` is 100% of the CHILD, so a child taller than the window
+ * parks the second copy in the wrong place. --roll keeps the three in step. */
 .navlink {
+  /* 1.7em, not the 1.55em the loaded webfont needs: the fallback mono has
+     taller metrics, so a tight window clips during the font swap. */
+  --roll: 1.7em;
   display: block;
+  padding-block: 0.35rem; /* a real hit area, not just the text box */
   font-family: var(--font-mono);
   font-size: var(--step--1);
+  line-height: var(--roll);
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--text-2);
@@ -87,19 +98,23 @@
 .navlink__inner {
   position: relative;
   display: block;
-  height: 1em;
+  height: var(--roll);
   overflow: hidden;
 }
 
 .navlink__a,
 .navlink__b {
   display: block;
+  height: var(--roll);
+  line-height: var(--roll);
   transition: transform var(--dur-2) var(--ease);
 }
 
 .navlink__b {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
+  width: 100%;
   transform: translateY(100%);
 }
 

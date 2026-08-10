@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import express, { type Request, type Response } from "express";
 import cors from "cors";
-import { env } from "./env.js";
+import { env, isProd } from "./env.js";
 import {
   all,
   db,
@@ -21,7 +21,42 @@ import { payoutRail } from "./payout.js";
 
 const app = express();
 app.use(express.json({ limit: "256kb" }));
-app.use(cors({ origin: env.origin === "*" ? true : env.origin.split(",") }));
+
+/* --------------------------------------------------------------------- CORS
+ *
+ * A rejected origin is the single most confusing failure in this stack: the
+ * request succeeds, the response comes back 200, and the browser drops it for
+ * want of a header — the dApp only ever sees "Failed to fetch". So the rule is
+ * permissive where it is safe and LOUD where it is not.
+ *
+ * CORS_ORIGIN takes `*` or a comma-separated list. Outside production any
+ * loopback origin is allowed regardless of port, because the dev server picks
+ * a new port whenever 5174 is taken and 127.0.0.1 is not the same origin as
+ * localhost.
+ * ------------------------------------------------------------------------ */
+
+const allowList =
+  env.origin === "*" ? null : env.origin.split(",").map((o) => o.trim()).filter(Boolean);
+
+const LOOPBACK = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
+
+app.use(
+  cors({
+    origin(origin, cb) {
+      // No Origin header: curl, same-origin, server-to-server. Nothing to gate.
+      if (!origin) return cb(null, true);
+      if (!allowList) return cb(null, true);
+      if (allowList.includes(origin)) return cb(null, true);
+      if (!isProd && LOOPBACK.test(origin)) return cb(null, true);
+
+      console.warn(
+        `[cors] refused ${origin} — it is not in CORS_ORIGIN (${env.origin}).` +
+          ` The browser will report this as "Failed to fetch".`,
+      );
+      return cb(null, false);
+    },
+  }),
+);
 
 /* ------------------------------------------------------------------ utils */
 

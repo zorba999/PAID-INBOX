@@ -10,12 +10,14 @@ import { env } from "./env.js";
  *   simulated — journals the transfer and returns a synthetic id. No keys, no
  *               network. This is the default so the app runs end to end out of
  *               the box, and NOTHING it reports is presented as on-chain.
- *   sphere    — a real bot wallet on testnet2 settles with payments.send().
- *               Requires BOT_MNEMONIC + WALLET_API_URL.
+ *   sphere    — a real escrow wallet on testnet2 settles with payments.send().
+ *               Requires ESCROW_MNEMONIC + WALLET_API_URL.
  *
- * Idempotency is the caller's job (unique constraint on ledger(thread_id,kind))
- * AND ours: `transferId` is derived from the thread + kind, so a crashed run
- * that resumes reuses the same durable intent id instead of paying twice.
+ * Idempotency: the ledger's UNIQUE(thread_id, kind) is the hard guarantee, and
+ * settle() checks it before calling in. The SDK's `send` takes no caller-supplied
+ * transfer id, so a crash between the broadcast and the ledger write is the one
+ * window that needs an operator to reconcile — `settlement_failed` events and
+ * /api/reconciliation exist for exactly that.
  * ========================================================================== */
 
 export interface PayoutRequest {
@@ -39,13 +41,15 @@ export interface PayoutResult {
 export interface PayoutRail {
   readonly mode: "simulated" | "sphere";
   ready(): Promise<boolean>;
-  /** Bot float, base units. `null` when the rail cannot report one. */
+  /** Escrow float, base units. `null` when the rail cannot report one. */
   balance(): Promise<string | null>;
+  /** The address senders should pay into. `null` for the simulated rail. */
+  address(): Promise<string | null>;
   send(req: PayoutRequest): Promise<PayoutResult>;
 }
 
-/** Stable per (thread, kind) so a retry after a crash reuses the same id. */
-function durableTransferId(threadId: string, kind: string): string {
+/** Stable per (thread, kind) — used to label our own ledger row. */
+function localTransferId(threadId: string, kind: string): string {
   return crypto.createHash("sha256").update(`${threadId}:${kind}`).digest("hex").slice(0, 32);
 }
 
@@ -62,9 +66,13 @@ class SimulatedRail implements PayoutRail {
     return null;
   }
 
+  async address(): Promise<string | null> {
+    return null;
+  }
+
   async send(req: PayoutRequest): Promise<PayoutResult> {
     return {
-      transferId: `sim-${durableTransferId(req.threadId, req.kind)}`,
+      transferId: `sim-${localTransferId(req.threadId, req.kind)}`,
       status: "settled",
       deliveryPending: false,
       simulated: true,
@@ -84,26 +92,51 @@ class SphereRail implements PayoutRail {
     if (this.booting) return this.booting;
 
     this.booting = (async () => {
-      if (!env.botMnemonic) throw new Error("BOT_MNEMONIC is required for PAYOUT_MODE=sphere");
-      // Since sphere-sdk 0.14 there is no own-storage custody: Sphere.init throws
-      // INVALID_CONFIG without a wallet-api composition.
+      // Since sphere-sdk 0.14 there is no own-storage custody: Sphere.init
+      // throws INVALID_CONFIG without a wallet-api composition.
       if (!env.walletApiUrl) throw new Error("WALLET_API_URL is required for PAYOUT_MODE=sphere");
 
-      const sdk: any = await import("@unicitylabs/sphere-sdk");
-      const nodeImpl: any = await import("@unicitylabs/sphere-sdk/impl/nodejs");
-      const walletApi: any = await import("@unicitylabs/sphere-sdk/impl/shared/wallet-api");
+      const { Sphere } = (await import("@unicitylabs/sphere-sdk")) as any;
+      const { createNodeProviders } = (await import("@unicitylabs/sphere-sdk/impl/nodejs")) as any;
+      const { createWalletApiProviders } = (await import(
+        "@unicitylabs/sphere-sdk/impl/shared/wallet-api"
+      )) as any;
 
-      const providers = nodeImpl.createNodeProviders({ network: env.network });
-      const composed = walletApi.createWalletApiProviders({
-        ...providers,
-        walletApiUrl: env.walletApiUrl,
-      });
-
-      this.sphere = await sdk.Sphere.init({
-        mnemonic: env.botMnemonic,
+      // 1. base providers: storage, transport, oracle
+      const base = createNodeProviders({
         network: env.network,
-        providers: composed,
+        dataDir: env.escrowDataDir,
+        ...(env.aggregatorApiKey ? { oracle: { apiKey: env.aggregatorApiKey } } : {}),
       });
+
+      // 2. the money rail — token custody and the mailbox live here
+      const providers = createWalletApiProviders(base, {
+        baseUrl: env.walletApiUrl,
+        network: env.network,
+        deviceId: env.escrowDeviceId,
+      });
+
+      // 3. the wallet itself. autoGenerate only fires when no mnemonic is set
+      //    AND no wallet exists in dataDir yet.
+      const result = await Sphere.init({
+        ...providers,
+        network: env.network,
+        ...(env.escrowMnemonic ? { mnemonic: env.escrowMnemonic } : { autoGenerate: true }),
+      });
+
+      this.sphere = result.sphere ?? result;
+
+      if (result.created && result.generatedMnemonic) {
+        console.warn(
+          "\n[escrow] A NEW escrow wallet was generated. Save this mnemonic into ESCROW_MNEMONIC" +
+            " or the float becomes unreachable on the next boot:\n\n  " +
+            result.generatedMnemonic +
+            "\n",
+        );
+      }
+
+      const addr = this.sphere?.identity?.nametag ?? this.sphere?.identity?.directAddress;
+      console.log(`[escrow] wallet ready on ${env.network}: ${addr ?? "(no identity)"}`);
     })();
 
     try {
@@ -117,16 +150,28 @@ class SphereRail implements PayoutRail {
     try {
       await this.boot();
       return true;
-    } catch {
+    } catch (err) {
+      console.error("[escrow] boot failed:", err instanceof Error ? err.message : err);
       return false;
+    }
+  }
+
+  async address(): Promise<string | null> {
+    try {
+      await this.boot();
+      return this.sphere?.identity?.nametag ?? this.sphere?.identity?.directAddress ?? null;
+    } catch {
+      return null;
     }
   }
 
   async balance(): Promise<string | null> {
     try {
       await this.boot();
+      // Reads the wallet-api inventory, which the server credits asynchronously —
+      // a just-settled transfer can be missing here until `inventory:updated`.
       const assets = await this.sphere.payments.assets();
-      const match = (assets as Array<{ coinId: string; amount: string }>).find(
+      const match = (assets as Array<{ coinId?: string; amount?: string }>).find(
         (a) => a.coinId?.toLowerCase() === env.coinId,
       );
       return match?.amount ?? "0";
@@ -136,26 +181,30 @@ class SphereRail implements PayoutRail {
   }
 
   async send(req: PayoutRequest): Promise<PayoutResult> {
-    const transferId = durableTransferId(req.threadId, req.kind);
+    const fallbackId = localTransferId(req.threadId, req.kind);
     try {
       await this.boot();
+
       const result = await this.sphere.payments.send({
-        to: req.toAddress ?? req.toPubkey,
-        amount: BigInt(req.amountBase),
+        recipient: req.toAddress ?? req.toPubkey,
+        amount: req.amountBase, // base units, as a string — same convention as the wire
         coinId: env.coinId,
-        memo: req.memo,
-        transferId, // durable: a resumed run reuses it instead of double-paying
       });
 
+      if (result?.error) {
+        return { transferId: fallbackId, status: "failed", deliveryPending: false, simulated: false, error: String(result.error) };
+      }
+
       return {
-        transferId: result?.transferId ?? transferId,
+        transferId: result?.transferId ?? fallbackId,
         status: "settled",
+        // The SDK reports recipient-side delivery separately from on-chain finality.
         deliveryPending: result?.deliveryState === "pending-delivery",
         simulated: false,
       };
     } catch (err) {
       return {
-        transferId,
+        transferId: fallbackId,
         status: "failed",
         deliveryPending: false,
         simulated: false,

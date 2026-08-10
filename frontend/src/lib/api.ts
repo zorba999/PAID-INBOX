@@ -138,7 +138,9 @@ export interface AppConfig {
   maxPriceBase: string;
   disputeWindowHours: number;
   minReplyChars: number;
-  escrowAddress: string;
+  escrowAddress: string | null;
+  /** False when the server has nowhere for senders to pay — compose is blocked. */
+  escrowConfigured: boolean;
   payoutMode: "simulated" | "sphere";
   allowDemo: boolean;
   network: string;

@@ -62,9 +62,25 @@ export const env = {
    *               and WALLET_API_URL.
    */
   payoutMode: (process.env.PAYOUT_MODE === "sphere" ? "sphere" : "simulated") as "simulated" | "sphere",
-  botMnemonic: process.env.BOT_MNEMONIC ?? "",
-  botNametag: process.env.BOT_NAMETAG ?? "@paidinbox-escrow",
-  walletApiUrl: process.env.WALLET_API_URL ?? "",
+
+  /**
+   * Where senders pay. This MUST be an address the network can resolve — a
+   * nametag you have registered, or a DIRECT:// address. The wallet answers
+   * INVALID_RECIPIENT (4101) for anything it cannot resolve, so a placeholder
+   * here fails at the first `send` intent.
+   */
+  escrowAddress: process.env.ESCROW_ADDRESS ?? "",
+
+  escrowMnemonic: process.env.ESCROW_MNEMONIC ?? "",
+  escrowDataDir: process.env.ESCROW_DATA_DIR ?? "./data/escrow-wallet",
+  escrowDeviceId: process.env.ESCROW_DEVICE_ID ?? "paid-inbox-escrow",
+
+  /** Token custody + mailbox. Sphere.init refuses without it. */
+  walletApiUrl: process.env.WALLET_API_URL ?? "https://wallet-api.unicity.network",
+
+  /** testnet2 gateway key. Public, not a secret. Empty = the SDK default. */
+  aggregatorApiKey: process.env.AGGREGATOR_API_KEY ?? "",
+
   network: process.env.NETWORK ?? "testnet2",
 
   /** Accept demo-mode signatures. Turn OFF in production. */

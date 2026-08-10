@@ -25,7 +25,6 @@ app.use(cors({ origin: env.origin === "*" ? true : env.origin.split(",") }));
 
 /* ------------------------------------------------------------------ utils */
 
-const HEX64 = /^[0-9a-f]{64}$/i;
 const PUBKEY = /^0[23][0-9a-f]{64}$/i;
 
 function bad(res: Response, message: string, code = 400): void {
@@ -91,6 +90,21 @@ function getThread(id: string): ThreadRow | undefined {
   return one<ThreadRow>("SELECT * FROM threads WHERE id = ?", id);
 }
 
+/**
+ * Where senders pay. On the sphere rail the escrow wallet knows its own
+ * address, so ESCROW_ADDRESS is only needed to override it (or to point at a
+ * wallet this server does not run).
+ *
+ * There is deliberately no default: a placeholder nametag nobody registered
+ * makes every `send` intent fail with INVALID_RECIPIENT, and it fails in the
+ * wallet, where the message is useless to whoever is debugging.
+ */
+let cachedRailAddress: string | null = null;
+
+function escrowAddress(): string | null {
+  return env.escrowAddress || cachedRailAddress;
+}
+
 /* ------------------------------------------------------------------ config */
 
 app.get("/api/config", async (_req, res) => {
@@ -104,7 +118,8 @@ app.get("/api/config", async (_req, res) => {
     maxPriceBase: env.maxPriceBase,
     disputeWindowHours: env.disputeWindowHours,
     minReplyChars: env.minReplyChars,
-    escrowAddress: env.botNametag,
+    escrowAddress: escrowAddress(),
+    escrowConfigured: !!escrowAddress(),
     payoutMode: payoutRail.mode,
     allowDemo: env.allowDemo,
     network: env.network,
@@ -218,6 +233,15 @@ app.post("/api/threads", requireAuth, (req, res) => {
   if (!recipient.is_open) return bad(res, "This inbox is closed", 403);
   if (isBlocked(recipient.pubkey, me.pubkey)) return bad(res, "You cannot reach this inbox", 403);
 
+  const escrow = escrowAddress();
+  if (!escrow) {
+    return bad(
+      res,
+      "This server has no escrow address configured, so there is nowhere to pay. Set ESCROW_ADDRESS to a registered nametag or a DIRECT:// address (or run PAYOUT_MODE=sphere so the escrow wallet supplies its own).",
+      503,
+    );
+  }
+
   const now = Date.now();
   const id = crypto.randomUUID();
   const ref = `pi_${crypto.randomBytes(6).toString("hex")}`;
@@ -244,7 +268,7 @@ app.post("/api/threads", requireAuth, (req, res) => {
   res.json({
     thread: threadDto(getThread(id)!, me.pubkey),
     payment: {
-      to: env.botNametag,
+      to: escrowAddress(),
       amount: recipient.price_base,
       coinId: env.coinId,
       memo: `paidinbox:${ref}`,
@@ -520,12 +544,23 @@ app.use((err: unknown, _req: Request, res: Response, _next: express.NextFunction
 
 /* ------------------------------------------------------------------- boot */
 
-app.listen(env.port, () => {
+app.listen(env.port, async () => {
   console.log(`\n  Paid Inbox API   http://localhost:${env.port}`);
   console.log(`  payout rail      ${payoutRail.mode}${payoutRail.mode === "simulated" ? "  (no on-chain transfer)" : ""}`);
   console.log(`  payout policy    ${env.payoutPolicy}  (reply -> ${resolveOutcomeLabel()})`);
   console.log(`  fee              ${env.feeBps / 100}%`);
-  console.log(`  demo signatures  ${env.allowDemo ? "allowed" : "refused"}\n`);
+  console.log(`  demo signatures  ${env.allowDemo ? "allowed" : "refused"}`);
+
+  // On the sphere rail the escrow wallet is the source of truth for its own
+  // address; booting it here means the first sender does not pay that latency.
+  if (payoutRail.mode === "sphere") {
+    cachedRailAddress = await payoutRail.address();
+  }
+
+  const escrow = escrowAddress();
+  console.log(`  escrow address   ${escrow ?? "NOT SET — senders cannot pay, see ESCROW_ADDRESS"}`);
+  console.log(`  network          ${env.network}\n`);
+
   startSettlementLoop();
 });
 

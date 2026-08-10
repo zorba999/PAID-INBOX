@@ -68,12 +68,17 @@ export function Compose() {
 
   const busy = step !== "idle" && step !== "done";
 
+  // No escrow address means there is nowhere to pay. Say so here rather than
+  // letting the user write a message and hit a 503 on submit.
+  const escrowReady = session.config?.escrowConfigured !== false;
+
   const canSend =
     !!recipient &&
     recipient.isOpen &&
     subject.trim().length >= 3 &&
     body.trim().length >= 10 &&
     !busy &&
+    escrowReady &&
     !wallet.isWalletLocked;
 
   const send = useCallback(async () => {
@@ -170,6 +175,18 @@ export function Compose() {
 
   return (
     <Page eyebrow="compose" title="Send a paid message">
+      {!escrowReady && (
+        <div className="notice notice--warn">
+          <Label tone="accent">escrow not configured</Label>
+          <p>
+            This server has no escrow address, so there is nowhere for the payment to go. Set{" "}
+            <span className="mono">ESCROW_ADDRESS</span> to a registered nametag (or run{" "}
+            <span className="mono">PAYOUT_MODE=sphere</span> so the escrow wallet supplies its own) and
+            restart the API.
+          </p>
+        </div>
+      )}
+
       <div className="compose">
         <section className="compose__form">
           <label className="field">

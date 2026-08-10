@@ -72,14 +72,28 @@ export function Compose() {
   // letting the user write a message and hit a 503 on submit.
   const escrowReady = session.config?.escrowConfigured !== false;
 
-  const canSend =
-    !!recipient &&
-    recipient.isOpen &&
-    subject.trim().length >= 3 &&
-    body.trim().length >= 10 &&
-    !busy &&
-    escrowReady &&
-    !wallet.isWalletLocked;
+  const MIN_SUBJECT = 3;
+  const MIN_BODY = 10;
+  const isSelf = !!recipient && recipient.pubkey === session.me?.pubkey;
+
+  /* A disabled button that will not say why is worse than no button. Every
+   * condition that blocks the send names itself, in the order the user would
+   * fix them. */
+  const blocker: string | null = (() => {
+    if (!target.trim()) return "Enter the handle of the inbox you want to reach.";
+    if (!recipient) return "That handle did not resolve to an inbox.";
+    if (isSelf) return "That is your own inbox.";
+    if (!recipient.isOpen) return "This inbox is closed to new messages.";
+    if (!escrowReady) return "This server has no escrow address configured.";
+    if (subject.trim().length < MIN_SUBJECT)
+      return `The subject needs at least ${MIN_SUBJECT} characters.`;
+    if (body.trim().length < MIN_BODY)
+      return `The message needs at least ${MIN_BODY} characters — you have ${body.trim().length}.`;
+    if (wallet.isWalletLocked) return "Unlock your wallet to approve the payment.";
+    return null;
+  })();
+
+  const canSend = !blocker && !busy;
 
   const send = useCallback(async () => {
     if (!recipient) return;
@@ -171,7 +185,6 @@ export function Compose() {
   /* ------------------------------------------------------------- view */
 
   const cost = useMemo(() => (recipient ? formatCoin(recipient.priceBase) : "—"), [recipient]);
-  const isSelf = recipient?.pubkey === session.me?.pubkey;
 
   return (
     <Page eyebrow="compose" title="Send a paid message">
@@ -210,7 +223,9 @@ export function Compose() {
           <label className="field">
             <div className="field__label">
               <Label tone="strong">subject</Label>
-              <span className="dim num">{subject.length}/140</span>
+              <span className={`num ${subject.trim().length < MIN_SUBJECT ? "accent" : "dim"}`}>
+                {subject.length}/140
+              </span>
             </div>
             <input
               className="input"
@@ -225,7 +240,9 @@ export function Compose() {
           <label className="field">
             <div className="field__label">
               <Label tone="strong">message</Label>
-              <span className="dim num">{body.length}</span>
+              <span className={`num ${body.trim().length < MIN_BODY ? "accent" : "dim"}`}>
+                {body.trim().length < MIN_BODY ? `${body.trim().length} / ${MIN_BODY} min` : body.length}
+              </span>
             </div>
             <textarea
               className="textarea"
@@ -249,10 +266,10 @@ export function Compose() {
           )}
 
           <div className="compose__actions">
-            <Button variant="primary" size="lg" onClick={send} disabled={!canSend || isSelf} loading={busy}>
+            <Button variant="primary" size="lg" onClick={send} disabled={!canSend} loading={busy}>
               {busy ? STEP_COPY[step as Exclude<Step, "idle" | "done">] : `Pay ${cost} and send`}
             </Button>
-            {wallet.isWalletLocked && <Label tone="accent">unlock the wallet first</Label>}
+            {!busy && blocker && <p className="compose__blocker">{blocker}</p>}
           </div>
 
           <ol className="flow" aria-label="What happens next">

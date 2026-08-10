@@ -972,6 +972,15 @@
   max-width: 62ch;
 }
 
+/* Why the send button is disabled. It sits next to the button, not buried in
+   a field, because that is where the user is looking when nothing happens. */
+.compose__blocker {
+  font-size: var(--step--1);
+  color: var(--accent);
+  max-width: 40ch;
+  line-height: 1.5;
+}
+
 .flow {
   list-style: none;
   display: grid;

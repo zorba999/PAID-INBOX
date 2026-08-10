@@ -1,0 +1,169 @@
+/* ==========================================================================
+   PAID INBOX — design tokens
+   Palette: Unicity (orange #FF6F00 / ink #060606 / paper #FEFEFE)
+   Type   : Anton (display) · Inter (body) · Geist Mono (labels)
+   Layout : editorial, hairline rules, pill controls  (noth.in / produx.design)
+   ========================================================================== */
+
+:root {
+  /* ---- brand constants (identical in both themes) ---- */
+  --uni-orange: #ff6f00;
+  --uni-orange-hot: #ff8c2f;
+  --uni-orange-deep: #d95e00;
+  --uni-ink: #060606;
+  --uni-paper: #fefefe;
+
+  /* ---- type ---- */
+  --font-display: "Anton", "Arial Narrow", Impact, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --step--2: 0.625rem; /* 10px  micro label */
+  --step--1: 0.75rem;  /* 12px  label / meta */
+  --step-0: 0.875rem;  /* 14px  body         */
+  --step-1: 1rem;      /* 16px  body lg      */
+  --step-2: 1.375rem;  /* 22px  h3           */
+  --step-3: clamp(1.75rem, 1.3rem + 2vw, 2.75rem);   /* h2 */
+  --step-4: clamp(2.5rem, 1.2rem + 6vw, 6rem);       /* h1 */
+  --step-5: clamp(3.5rem, 0.5rem + 12vw, 11rem);     /* hero */
+
+  --tracking-label: 0.16em;
+  --tracking-btn: 0.1em;
+  --tracking-tight: -0.02em;
+
+  /* ---- geometry ---- */
+  --r-pill: 999px;
+  --r-lg: 18px;
+  --r-md: 12px;
+  --r-sm: 8px;
+
+  --gutter: clamp(1rem, 0.4rem + 2.6vw, 3.5rem);
+  --rule: 1px;
+  --maxw: 1400px;
+
+  /* ---- motion ---- */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-1: 140ms;
+  --dur-2: 280ms;
+  --dur-3: 560ms;
+}
+
+/* ==========================  DARK (default)  ============================== */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #060606;
+  --bg-deep: #000000;
+  --surface: #0b0b0b;
+  --surface-2: #111111;
+  --surface-3: #171717;
+  --overlay: rgba(6, 6, 6, 0.72);
+
+  --text: #fefefe;
+  --text-2: rgba(254, 254, 254, 0.62);
+  /* The 10px micro-labels sit on --text-3, so it has to clear 4.5:1 on bg,
+     surface AND surface-3. 0.47 dark / 0.58 light is the floor that does. */
+  --text-3: rgba(254, 254, 254, 0.47);
+  --text-inv: #060606;
+
+  --line: rgba(254, 254, 254, 0.11);
+  --line-2: rgba(254, 254, 254, 0.2);
+  --line-strong: rgba(254, 254, 254, 0.34);
+
+  /* `--accent` is the TEXT/UI accent and must clear 4.5:1 on bg and surface.
+     `--accent-vivid` is the brand orange, for fills and display type only —
+     never for anything small enough to read. */
+  --accent: var(--uni-orange);
+  --accent-vivid: var(--uni-orange);
+  --accent-text: #060606;
+  --accent-soft: rgba(255, 111, 0, 0.14);
+  --accent-line: rgba(255, 111, 0, 0.42);
+  --accent-glow: rgba(255, 111, 0, 0.28);
+
+  --ok: #3ddc84;
+  --ok-soft: rgba(61, 220, 132, 0.13);
+  --warn: #ffc94a;
+  --warn-soft: rgba(255, 201, 74, 0.13);
+  --danger: #ff5a4e;
+  --danger-soft: rgba(255, 90, 78, 0.13);
+
+  --grain-opacity: 0.045;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --shadow-2: 0 18px 48px -12px rgba(0, 0, 0, 0.85);
+}
+
+/* ==========================  LIGHT  ====================================== */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #fefefe;
+  --bg-deep: #f2f1ee;
+  --surface: #f6f5f2;
+  --surface-2: #ffffff;
+  --surface-3: #eeece7;
+  --overlay: rgba(254, 254, 254, 0.75);
+
+  --text: #060606;
+  --text-2: rgba(6, 6, 6, 0.6);
+  --text-3: rgba(6, 6, 6, 0.58);
+  --text-inv: #fefefe;
+
+  --line: rgba(6, 6, 6, 0.13);
+  --line-2: rgba(6, 6, 6, 0.22);
+  --line-strong: rgba(6, 6, 6, 0.4);
+
+  --accent: #ad4900;
+  --accent-vivid: #e56300;
+  --accent-text: #fefefe;
+  --accent-soft: rgba(255, 111, 0, 0.12);
+  --accent-line: rgba(173, 73, 0, 0.45);
+  --accent-glow: rgba(255, 111, 0, 0.22);
+
+  --ok: #0d7a3d;
+  --ok-soft: rgba(15, 138, 69, 0.11);
+  --warn: #8a5c00;
+  --warn-soft: rgba(154, 104, 0, 0.11);
+  --danger: #c1281d;
+  --danger-soft: rgba(204, 46, 34, 0.1);
+
+  --grain-opacity: 0.03;
+  --shadow-1: 0 1px 2px rgba(6, 6, 6, 0.07);
+  --shadow-2: 0 20px 46px -16px rgba(6, 6, 6, 0.22);
+}
+
+/* Follow the OS when the user has not chosen (no data-theme attribute set). */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --bg: #fefefe;
+    --bg-deep: #f2f1ee;
+    --surface: #f6f5f2;
+    --surface-2: #ffffff;
+    --surface-3: #eeece7;
+    --overlay: rgba(254, 254, 254, 0.75);
+    --text: #060606;
+    --text-2: rgba(6, 6, 6, 0.6);
+    --text-3: rgba(6, 6, 6, 0.58);
+    --text-inv: #fefefe;
+    --line: rgba(6, 6, 6, 0.13);
+    --line-2: rgba(6, 6, 6, 0.22);
+    --line-strong: rgba(6, 6, 6, 0.4);
+    --accent: #ad4900;
+    --accent-vivid: #e56300;
+    --accent-text: #fefefe;
+    --accent-soft: rgba(255, 111, 0, 0.12);
+    --accent-line: rgba(173, 73, 0, 0.45);
+    --accent-glow: rgba(255, 111, 0, 0.22);
+    --ok: #0d7a3d;
+    --ok-soft: rgba(15, 138, 69, 0.11);
+    --warn: #8a5c00;
+    --warn-soft: rgba(154, 104, 0, 0.11);
+    --danger: #c1281d;
+    --danger-soft: rgba(204, 46, 34, 0.1);
+    --grain-opacity: 0.03;
+    --shadow-1: 0 1px 2px rgba(6, 6, 6, 0.07);
+    --shadow-2: 0 20px 46px -16px rgba(6, 6, 6, 0.22);
+  }
+}

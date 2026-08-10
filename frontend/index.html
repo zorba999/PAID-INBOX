@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Paid Inbox — attention has a price</title>
+    <meta
+      name="description"
+      content="Pay to reach an inbox, earn by replying. Escrowed messaging on Unicity, connected with a Sphere wallet."
+    />
+    <meta name="theme-color" content="#060606" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#fefefe" media="(prefers-color-scheme: light)" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23060606'/%3E%3Cpath d='M6 11h20v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V11Z' fill='none' stroke='%23FF6F00' stroke-width='2.2'/%3E%3Cpath d='m6.5 11.5 9.5 7 9.5-7' fill='none' stroke='%23FF6F00' stroke-width='2.2'/%3E%3C/svg%3E"
+    />
+    <script>
+      // Set the theme before first paint so a reload never flashes the wrong one.
+      (function () {
+        try {
+          var saved = localStorage.getItem("paidinbox:theme");
+          if (saved === "light" || saved === "dark") {
+            document.documentElement.setAttribute("data-theme", saved);
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

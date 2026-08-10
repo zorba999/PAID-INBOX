@@ -1,0 +1,13 @@
+{
+  "name": "paid-inbox-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Paid Inbox — attention has a price. A Sphere-connected dApp on Unicity.",
+  "scripts": {
+    "install:all": "npm --prefix server install && npm --prefix frontend install",
+    "dev:server": "npm --prefix server run dev",
+    "dev:web": "npm --prefix frontend run dev",
+    "typecheck": "npm --prefix server run typecheck && npm --prefix frontend run typecheck",
+    "build": "npm --prefix frontend run build"
+  }
+}

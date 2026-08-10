@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { INTENT_ACTIONS } from "@unicitylabs/sphere-sdk/connect";
+import { INTENT_ACTIONS, RPC_METHODS } from "@unicitylabs/sphere-sdk/connect";
 import { api, ApiError, type PublicUser } from "../lib/api";
 import { COIN } from "../lib/config";
 import { classifyRequestError, describeConnectFailure } from "../lib/connectErrors";
@@ -36,28 +36,65 @@ export function Compose() {
   const [body, setBody] = useState("");
   const [recipient, setRecipient] = useState<PublicUser | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
+  /** null = unknown, true = the nametag exists on Unicity but has no inbox here. */
+  const [existsOnNetwork, setExistsOnNetwork] = useState<boolean | null>(null);
   const [step, setStep] = useState<Step>("idle");
   const [error, setError] = useState<string | null>(null);
   const [stuckThread, setStuckThread] = useState<string | null>(null);
 
-  /* ----------------------------------------------------------- lookup */
+  /* ----------------------------------------------------------- lookup
+   *
+   * Depend on the STABLE pieces of the wallet, never the context object: that
+   * object is rebuilt on every render, so a callback closing over it changes
+   * identity constantly and the debounced effect below restarts forever —
+   * clearing the lookup state each time and never settling.
+   */
+  const { query: walletQuery, isConnected: walletConnected, isWalletLocked } = wallet;
 
-  const lookup = useCallback(async (raw: string) => {
-    const handle = normalizeHandle(raw);
-    if (!handle) {
-      setRecipient(null);
+  const lookup = useCallback(
+    async (raw: string) => {
+      const handle = normalizeHandle(raw);
+      setExistsOnNetwork(null);
+
+      if (!handle) {
+        setRecipient(null);
+        setLookupError(null);
+        return;
+      }
+
+      try {
+        const { user } = await api.profile(handle);
+        setRecipient(user);
+        setLookupError(user.isOpen ? null : "This inbox is closed right now.");
+        return;
+      } catch (err) {
+        setRecipient(null);
+        if (!(err instanceof ApiError) || err.status !== 404) {
+          setLookupError(err instanceof ApiError ? err.message : "Could not look that up");
+          return;
+        }
+      }
+
+      /* Not in our directory. That is two very different situations, and the
+       * difference is the whole answer: a typo, or a real person on Unicity who
+       * simply has not opened an inbox here. `resolve:peer` settles it — the
+       * wallet asks the network, which is the only thing that actually knows. */
+      if (!walletConnected || isWalletLocked) {
+        setLookupError(null);
+        setExistsOnNetwork(false);
+        return;
+      }
+
+      try {
+        await walletQuery(RPC_METHODS.RESOLVE, { identifier: `@${handle}` });
+        setExistsOnNetwork(true);
+      } catch {
+        setExistsOnNetwork(false);
+      }
       setLookupError(null);
-      return;
-    }
-    try {
-      const { user } = await api.profile(handle);
-      setRecipient(user);
-      setLookupError(user.isOpen ? null : "This inbox is closed right now.");
-    } catch (err) {
-      setRecipient(null);
-      setLookupError(err instanceof ApiError ? err.message : "Could not find that inbox");
-    }
-  }, []);
+    },
+    [walletQuery, walletConnected, isWalletLocked],
+  );
 
   useEffect(() => {
     const id = setTimeout(() => void lookup(target), 320);
@@ -81,7 +118,11 @@ export function Compose() {
    * fix them. */
   const blocker: string | null = (() => {
     if (!target.trim()) return "Enter the handle of the inbox you want to reach.";
-    if (!recipient) return "That handle did not resolve to an inbox.";
+    if (!recipient) {
+      if (existsOnNetwork === true) return "They have not opened a Paid Inbox yet.";
+      if (existsOnNetwork === false) return `No nametag @${normalizeHandle(target)} on this network.`;
+      return "Looking that up…";
+    }
     if (isSelf) return "That is your own inbox.";
     if (!recipient.isOpen) return "This inbox is closed to new messages.";
     if (!escrowReady) return "This server has no escrow address configured.";
@@ -218,6 +259,30 @@ export function Compose() {
             />
             {lookupError && <p className="field__err">{lookupError}</p>}
             {isSelf && <p className="field__err">That is your own inbox.</p>}
+
+            {/* A nametag that exists on Unicity but has no inbox here is the
+                common case, and it is not an error — it is an invitation. */}
+            {existsOnNetwork === true && (
+              <div className="lookupnote">
+                <Label tone="accent">exists on unicity · no inbox yet</Label>
+                <p>
+                  <span className="mono">@{normalizeHandle(target)}</span> is a real wallet on{" "}
+                  {session.config?.network ?? "testnet2"}, but they have never opened a Paid Inbox, so there is
+                  no price and no reply window to hold them to.
+                </p>
+                <p className="dim">
+                  Send them this link — connecting a wallet and setting a price is all it takes:{" "}
+                  <span className="mono">{location.origin}</span>
+                </p>
+              </div>
+            )}
+
+            {existsOnNetwork === false && normalizeHandle(target) && (
+              <p className="field__err">
+                No nametag <span className="mono">@{normalizeHandle(target)}</span> resolves on{" "}
+                {session.config?.network ?? "testnet2"}. Check the spelling.
+              </p>
+            )}
           </label>
 
           <label className="field">

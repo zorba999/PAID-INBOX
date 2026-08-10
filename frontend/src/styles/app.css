@@ -955,6 +955,24 @@
   color: var(--danger);
 }
 
+/* A nametag that exists on Unicity but has no inbox here is not an error, so
+   it does not get error styling — it gets an invitation. */
+.lookupnote {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.7rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+  font-size: var(--step--1);
+  line-height: 1.55;
+}
+
+.lookupnote p {
+  color: var(--text-2);
+}
+
 .field__hint {
   margin-top: 0.5rem;
   font-size: var(--step--1);

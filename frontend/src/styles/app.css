@@ -33,18 +33,23 @@
   flex: none;
 }
 
+/* The logo is painted as a MASK rather than an <img>, so its colour comes from
+   `background` and follows --accent-vivid into light mode on its own. */
 .brand__mark {
-  width: 15px;
-  height: 15px;
-  border-radius: 3px;
+  width: 19px;
+  height: 19px;
+  flex: none;
   background: var(--accent-vivid);
-  box-shadow: 0 0 0 4px var(--accent-soft);
-  transition: transform var(--dur-2) var(--ease), border-radius var(--dur-2) var(--ease);
+  -webkit-mask: url("/logo.svg") center / contain no-repeat;
+  mask: url("/logo.svg") center / contain no-repeat;
+  transition: transform var(--dur-2) var(--ease), background-color var(--dur-2) var(--ease);
 }
 
+/* The old mark was an abstract square, so rotating it into a diamond read as
+   a flourish. On an actual logo it would just look broken — a scale is all
+   this needs. */
 .brand:hover .brand__mark {
-  transform: rotate(45deg) scale(0.88);
-  border-radius: 50%;
+  transform: scale(1.09);
 }
 
 .brand__text {

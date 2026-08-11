@@ -739,8 +739,10 @@ export function createApp(): Express {
 
   /* ---------------------------------------------------------- errors */
 
-  app.use((_req: Request, res: Response) => {
-    res.status(404).json({ error: "No such endpoint" });
+  /* Report the path that was actually routed. A bare "No such endpoint" hides
+   * the one thing worth knowing when a rewrite reshapes the URL on the way in. */
+  app.use((req: Request, res: Response) => {
+    res.status(404).json({ error: "No such endpoint", method: req.method, path: req.path, url: req.url });
   });
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

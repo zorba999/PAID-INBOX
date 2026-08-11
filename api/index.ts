@@ -43,8 +43,18 @@ function restoreOriginalUrl(req: IncomingMessage): void {
   const index = pairs.findIndex((p) => p === "__p" || p.startsWith("__p="));
   if (index === -1) return;
 
-  const path = pairs[index].slice("__p=".length);
+  const raw_p = pairs[index].slice("__p=".length);
   pairs.splice(index, 1);
+
+  /* The value arrives percent-encoded, separators and all: a request for
+   * /api/auth/nonce comes back as `auth%2Fnonce`, which Express reads as ONE
+   * segment and matches nothing. Decode it, then re-encode segment by segment,
+   * so the slashes are structural again and nothing inside a segment can
+   * introduce a `?`, a `#` or a separator of its own. */
+  const path = decodeURIComponent(raw_p)
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
 
   const rest = pairs.join("&");
   req.url = `/api/${path}${rest ? `?${rest}` : ""}`;

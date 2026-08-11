@@ -5,7 +5,6 @@ import { durationFromMinutes, formatCoin, pct } from "../lib/format";
 import { useSession } from "../app/SessionProvider";
 import { useWallet } from "../wallet/WalletProvider";
 import { Button, Label, Marquee, Rule } from "../components/ui";
-import { ConnectPanel } from "../components/wallet-ui";
 
 const STEPS = [
   {
@@ -88,20 +87,18 @@ export function Landing() {
               and the sender gets every unit back. Spam stops being free.
             </p>
 
-            <div className="hero__cta">
-              {wallet.isConnected && session.me ? (
-                <>
-                  <Link to="/inbox" className="btn btn--primary btn--lg">
-                    Open my inbox
-                  </Link>
-                  <Link to="/compose" className="btn btn--ghost btn--lg">
-                    Send a paid message
-                  </Link>
-                </>
-              ) : (
-                <ConnectPanel />
-              )}
-            </div>
+            {/* Connect lives in the header, which is sticky and always in view.
+                Repeating it here put the same button on screen twice. */}
+            {wallet.isConnected && session.me && (
+              <div className="hero__cta">
+                <Link to="/inbox" className="btn btn--primary btn--lg">
+                  Open my inbox
+                </Link>
+                <Link to="/compose" className="btn btn--ghost btn--lg">
+                  Send a paid message
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="hero__scroll" aria-hidden>

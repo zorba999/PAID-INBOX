@@ -50,7 +50,15 @@ export const REQUIRED_SCOPES: PermissionScope[] = [
  * Endpoints
  * ------------------------------------------------------------------------ */
 
-export const API_BASE = (import.meta.env.VITE_API_BASE as string) || "http://localhost:8787";
+/**
+ * Empty means same origin, which is what the deployment wants: the API is
+ * served from /api on the very same host, so there is no base to configure and
+ * nothing to forget to set. In dev the Vite server proxies /api to the local
+ * API instead, so this stays empty there too.
+ *
+ * VITE_API_BASE is only for pointing a build at an API somewhere else.
+ */
+export const API_BASE = (import.meta.env.VITE_API_BASE as string) ?? "";
 
 /** Wallet URL used for the P3 popup fallback. */
 export const WALLET_URL =

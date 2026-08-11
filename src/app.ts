@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
-import { env, isProd } from "./env.js";
+import { configErrors, env, isProd } from "./env.js";
 import {
   all,
   getUser,
@@ -143,6 +143,17 @@ export function createApp(): Express {
     }),
   );
 
+  /* A deployment missing a required variable answers with the list, on every
+   * route, instead of crashing the invocation and leaving the caller with an
+   * opaque platform error. /api/health is exempt so it can report them. */
+  app.use((req, res, next) => {
+    if (!configErrors.length || req.path === "/api/health") return next();
+    res.status(503).json({
+      error: "This deployment is not configured correctly and is not serving requests.",
+      problems: configErrors,
+    });
+  });
+
   /* Serverless has no timer, so traffic is what drives settlement. Throttled
    * inside, and never awaited by the request that triggered it. */
   app.use((_req, _res, next) => {
@@ -178,6 +189,9 @@ export function createApp(): Express {
   app.get(
     "/api/health",
     ah(async (_req, res) => {
+      if (configErrors.length) {
+        return res.status(503).json({ ok: false, problems: configErrors, at: Date.now() });
+      }
       await initDb();
       res.json({ ok: true, storage: env.postgresUrl ? "postgres" : "pglite", at: Date.now() });
     }),

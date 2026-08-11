@@ -106,21 +106,41 @@ export const env = {
   cronSecret: process.env.CRON_SECRET ?? "",
 } as const;
 
+/* ==========================================================================
+ * Configuration guards
+ *
+ * Collected, not thrown. Throwing at module scope kills a serverless
+ * invocation before any handler runs, and the platform answers
+ * FUNCTION_INVOCATION_FAILED with the reason buried in a log the person
+ * looking at the site cannot see. The API serves these instead, so a
+ * misconfigured deployment names the variable it is missing.
+ *
+ * They still refuse to serve anything: a misconfigured deployment is not a
+ * working one.
+ * ======================================================================== */
+
+export const configErrors: string[] = [];
+
 if (isProd && !process.env.AUTH_SECRET) {
-  throw new Error(
-    "AUTH_SECRET must be set in production. Without it a per-boot secret is generated, " +
-      "and on serverless that means every cold start silently invalidates every session.",
+  configErrors.push(
+    "AUTH_SECRET is not set. Without it a per-boot secret is generated, and on serverless that " +
+      "means every cold start silently invalidates every session.",
   );
 }
 if (isProd && env.allowDemo) {
-  throw new Error(
-    "ALLOW_DEMO must be 0 in production. A demo signature is a hash of the challenge and a " +
-      "public key, so leaving it on lets anyone authenticate as any account.",
+  configErrors.push(
+    "ALLOW_DEMO is on. A demo signature is a hash of the challenge and a public key, so leaving " +
+      "it on lets anyone authenticate as any account. Set it to 0.",
   );
 }
 if (isProd && !env.postgresUrl) {
-  throw new Error(
-    "POSTGRES_URL must be set in production. The PGlite fallback writes to the local " +
-      "filesystem, which a serverless invocation does not keep.",
+  configErrors.push(
+    "POSTGRES_URL is not set. The PGlite fallback writes to the local filesystem, which a " +
+      "serverless invocation does not keep. Attach a Postgres store with the prefix POSTGRES.",
   );
+}
+
+if (configErrors.length) {
+  console.error(`[config] refusing to serve, ${configErrors.length} problem(s):`);
+  for (const e of configErrors) console.error(`  - ${e}`);
 }

@@ -2,12 +2,13 @@ import { hasExtension, isInIframe } from "@unicitylabs/sphere-sdk/connect/browse
 import { WALLET_URL } from "../lib/config";
 
 /* ==========================================================================
- * Which Connect path is actually available in this browser, right now.
+ * Which Connect path is available in this browser.
  *
- * This mirrors the priority `autoConnect` uses internally, but we need it
- * BEFORE connecting: the popup path (P3) is refused by the hosted wallet with
- * a CloudFront 403, so opening a popup there only shows the user an error page
- * they cannot act on. Better to say so up front.
+ * Read this only AFTER a connect has failed, never to warn ahead of time:
+ * `hasExtension()` reads a flag the extension injects asynchronously, so on a
+ * cold page load it can still be false while the extension is present and
+ * about to work perfectly. A pre-emptive warning built on it fires on setups
+ * that have nothing wrong with them.
  * ======================================================================== */
 
 export type ConnectPath = "iframe" | "extension" | "popup";
@@ -36,6 +37,3 @@ export function isHostedWallet(url: string = WALLET_URL): boolean {
 export function popupPathIsBlocked(): boolean {
   return detectConnectPath() === "popup" && isHostedWallet();
 }
-
-export const CUSTOM_AGENT_URL = `${WALLET_URL.replace(/\/$/, "")}/agents/custom`;
-export const EXTENSION_RELEASES_URL = "https://github.com/unicity-sphere/sphere-extension/releases";

@@ -3,7 +3,6 @@ import { INTENT_ACTIONS } from "@unicitylabs/sphere-sdk/connect";
 import { useWallet } from "../wallet/WalletProvider";
 import { useSession } from "../app/SessionProvider";
 import { getDemoTransport, onDemoApproval, resetDemoWallet, type DemoApprovalRequest } from "../wallet/demoHost";
-import { CUSTOM_AGENT_URL, EXTENSION_RELEASES_URL, popupPathIsBlocked } from "../wallet/environment";
 import { COIN } from "../lib/config";
 import { displayName, formatCoin, shortKey } from "../lib/format";
 import { Button, Label, useToast } from "./ui";
@@ -35,7 +34,6 @@ export function ConnectPanel({ compact = false }: { compact?: boolean }) {
           Try demo wallet
         </Button>
         {wallet.error && <p className="connect__error">{wallet.error}</p>}
-        {!compact && <WalletPathNotice />}
       </div>
     );
   }
@@ -54,54 +52,6 @@ export function ConnectPanel({ compact = false }: { compact?: boolean }) {
   }
 
   return <IdentityChip />;
-}
-
-/**
- * The hosted Sphere wallet refuses the popup path: `/connect?origin=…` answers
- * a CloudFront **403** before the wallet is reached. Clicking Connect from a
- * plain browser tab therefore opens a window showing an error the user cannot
- * do anything about — so we say what to do instead, before they click.
- */
-export function WalletPathNotice() {
-  if (!popupPathIsBlocked()) return null;
-
-  return (
-    <div className="pathnote">
-      <Label tone="accent">connect needs one of these</Label>
-      <p>
-        The hosted Sphere wallet does not serve the popup path — it answers <span className="mono">403</span>{" "}
-        at the CDN. Pick either route and Connect starts working:
-      </p>
-      <ol className="pathnote__list">
-        <li>
-          <span className="pathnote__n num">1</span>
-          <span>
-            <b>Install the Sphere extension</b> — the best path anyway: the session survives page
-            navigations.{" "}
-            <a className="tlink" href={EXTENSION_RELEASES_URL} target="_blank" rel="noreferrer noopener">
-              Download a release ↗
-            </a>{" "}
-            then load it unpacked from <span className="mono">chrome://extensions</span>.
-          </span>
-        </li>
-        <li>
-          <span className="pathnote__n num">2</span>
-          <span>
-            <b>Run this dApp inside Sphere</b> as a custom agent and it connects over the iframe path.{" "}
-            <a className="tlink" href={CUSTOM_AGENT_URL} target="_blank" rel="noreferrer noopener">
-              Open custom agents ↗
-            </a>{" "}
-            and paste <span className="mono">{location.origin}</span>.
-          </span>
-        </li>
-      </ol>
-      <p className="dim">
-        Running the wallet locally on <span className="mono">:5173</span>? Set{" "}
-        <span className="mono">VITE_WALLET_URL=http://localhost:5173</span> — a local wallet does serve the
-        popup. Or just use the demo wallet above; it exercises the same protocol.
-      </p>
-    </div>
-  );
 }
 
 export function IdentityChip() {

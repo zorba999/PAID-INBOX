@@ -1,0 +1,10 @@
+<svg width="1500" height="500" viewBox="0 0 1500 500" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1500" height="500" fill="#060606"/>
+  <path d="M350 335H1050" stroke="#FF6F00" stroke-width="1"/>
+  <text x="350" y="205" font-family="Anton, Impact, sans-serif" font-size="108" letter-spacing="-0.01em" fill="#FEFEFE">ATTENTION</text>
+  <text x="350" y="298" font-family="Anton, Impact, sans-serif" font-size="108" letter-spacing="-0.01em" fill="#FEFEFE">HAS A PRICE</text>
+  <text x="350" y="375" font-family="Geist Mono, ui-monospace, monospace" font-size="13" letter-spacing="0.16em" fill="#FF6F00">[PAID INBOX · UNICITY TESTNET2]</text>
+  <g transform="translate(1190 145) scale(7)">
+    <path fill="#FF6F00" d="M1 1h10.909l19.091 19.091V31h-10.909L1 11.909V1Zm0 19.091h10.909l8.182 8.182V31H1v-10.909Z"/>
+  </g>
+</svg>

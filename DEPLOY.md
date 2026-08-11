@@ -79,9 +79,13 @@ A lambda cannot hold a timer, so settlement runs two ways:
 
 - **On traffic.** Every API request may trigger a tick, throttled by
   `SETTLEMENT_MIN_INTERVAL_MS` and never awaited by the request itself.
-- **On cron.** `vercel.json` calls `/api/cron/settle` hourly, which covers a
-  deployment nobody is using. Hobby plans run cron once a day; the traffic path
-  is what keeps a live site current.
+- **On cron.** `vercel.json` calls `/api/cron/settle` once a day, which covers
+  a deployment nobody is using at all.
+
+Hobby accounts only accept a daily cron expression: anything finer is rejected
+at deploy time, not ignored, so the deployment fails outright. That is why the
+schedule is `0 3 * * *` and why the traffic path, not the cron, is what keeps a
+live site current. On Pro, tighten it.
 
 Both call `runSettlementTick()`, and calling it twice changes nothing:
 `UNIQUE(thread_id, kind)` on the ledger is the guarantee, and settle() checks

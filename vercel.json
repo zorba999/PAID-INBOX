@@ -6,7 +6,8 @@
   "framework": null,
   "functions": {
     "api/**": {
-      "includeFiles": "node_modules/{@unicitylabs,ws}/**"
+      "includeFiles": "node_modules/**",
+      "excludeFiles": "node_modules/{@electric-sql,typescript,tsx,esbuild,@esbuild,@types}/**"
     }
   },
   "rewrites": [

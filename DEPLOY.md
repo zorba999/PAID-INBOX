@@ -73,18 +73,26 @@ per-boot secret invalidates sessions on each cold start, a demo signature is a
 hash of a challenge and a public key so anyone can mint one for any account,
 and the PGlite fallback writes to a filesystem the platform does not keep.
 
-## Why vercel.json force-includes the SDK
+## Why vercel.json ships all of node_modules
 
-`@unicitylabs/sphere-sdk` reaches `@unicitylabs/state-transition-sdk` through
-an import path Vercel's file tracer does not follow, so the package was left
-out of the lambda and the function died on
-`ERR_MODULE_NOT_FOUND: Cannot find package '@unicitylabs/state-transition-sdk'`
-before serving anything.
+Vercel traces imports to decide what belongs in a lambda. It does not follow
+the paths `@unicitylabs/sphere-sdk` uses to reach its own dependencies, so the
+function died before serving anything on
+`Cannot find package '@unicitylabs/state-transition-sdk'`, then on
+`Cannot find package 'uuid'` once that one was added by hand.
 
-`functions["api/**"].includeFiles` copies the whole `@unicitylabs` scope (and
-`ws`, a peer dependency reached the same way) into the function. If a future
-SDK version pulls in another scope, the same error will name it, and it goes
-in the same glob.
+Naming packages one at a time is a losing game: each fix only reveals the next
+missing transitive dependency, and it breaks again on any SDK upgrade. So the
+function includes `node_modules/**` and excludes what is provably build-only:
+
+| Excluded | Why |
+|---|---|
+| `@electric-sql` | PGlite, 24 MB, local fallback only |
+| `typescript`, `tsx`, `esbuild`, `@esbuild` | build tooling |
+| `@types` | types, erased at runtime |
+
+That ships about 52 MB against a 250 MB limit. If the SDK ever grows past
+that, compute its real dependency closure instead of trimming this list.
 
 ## Settlement without a process
 

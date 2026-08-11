@@ -12,7 +12,11 @@
   },
   "rewrites": [
     {
-      "source": "/((?!api/|assets/|logo\\.svg).*)",
+      "source": "/api/(.*)",
+      "destination": "/api?__p=$1"
+    },
+    {
+      "source": "/((?!api|assets/|logo\\.svg).*)",
       "destination": "/index.html"
     }
   ],

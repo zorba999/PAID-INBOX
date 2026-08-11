@@ -73,6 +73,19 @@ per-boot secret invalidates sessions on each cold start, a demo signature is a
 hash of a challenge and a public key so anyone can mint one for any account,
 and the PGlite fallback writes to a filesystem the platform does not keep.
 
+## Why vercel.json force-includes the SDK
+
+`@unicitylabs/sphere-sdk` reaches `@unicitylabs/state-transition-sdk` through
+an import path Vercel's file tracer does not follow, so the package was left
+out of the lambda and the function died on
+`ERR_MODULE_NOT_FOUND: Cannot find package '@unicitylabs/state-transition-sdk'`
+before serving anything.
+
+`functions["api/**"].includeFiles` copies the whole `@unicitylabs` scope (and
+`ws`, a peer dependency reached the same way) into the function. If a future
+SDK version pulls in another scope, the same error will name it, and it goes
+in the same glob.
+
 ## Settlement without a process
 
 A lambda cannot hold a timer, so settlement runs two ways:

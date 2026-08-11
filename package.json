@@ -14,7 +14,6 @@
     "escrow:create": "node scripts/create-escrow-wallet.mjs"
   },
   "dependencies": {
-    "@electric-sql/pglite": "^0.5.4",
     "@unicitylabs/sphere-sdk": "0.14.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.4",
@@ -23,6 +22,7 @@
     "ws": "^8.21.3"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.4",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/node": "^24.10.1",

@@ -49,7 +49,20 @@ async function createDriver(): Promise<Driver> {
     };
   }
 
-  const { PGlite } = await import("@electric-sql/pglite");
+  /* Built from a variable on purpose. A literal specifier lets the serverless
+   * bundler trace PGlite in and ship 24 MB of WASM to a function that can never
+   * reach this branch: production always has POSTGRES_URL. The indirection
+   * keeps it a dev-only dependency in fact as well as in package.json. */
+  const pgliteSpecifier = ["@electric-sql", "pglite"].join("/");
+  let PGlite: typeof import("@electric-sql/pglite").PGlite;
+  try {
+    ({ PGlite } = (await import(pgliteSpecifier)) as typeof import("@electric-sql/pglite"));
+  } catch {
+    throw new Error(
+      "No POSTGRES_URL is set and @electric-sql/pglite is not installed, so there is no database " +
+        "to fall back to. Set POSTGRES_URL, or run `npm install` to get the local one.",
+    );
+  }
 
   // PGlite's node filesystem creates its data directory non-recursively, so a
   // fresh clone with no ./data yet fails on ENOENT before Postgres even starts.

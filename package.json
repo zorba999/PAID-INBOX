@@ -1,13 +1,33 @@
 {
-  "name": "paid-inbox-monorepo",
+  "name": "paid-inbox",
   "version": "1.0.0",
   "private": true,
-  "description": "Paid Inbox — attention has a price. A Sphere-connected dApp on Unicity.",
+  "type": "module",
+  "description": "Attention has a price. A Sphere-connected dApp on Unicity, deployed entirely on Vercel.",
   "scripts": {
-    "install:all": "npm --prefix server install && npm --prefix frontend install",
-    "dev:server": "npm --prefix server run dev",
+    "install:all": "npm install && npm --prefix frontend install",
+    "dev": "npm run dev:api",
+    "dev:api": "tsx watch src/dev.ts",
     "dev:web": "npm --prefix frontend run dev",
-    "typecheck": "npm --prefix server run typecheck && npm --prefix frontend run typecheck",
-    "build": "npm --prefix frontend run build"
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "typecheck": "tsc --noEmit && npm --prefix frontend run typecheck",
+    "escrow:create": "node scripts/create-escrow-wallet.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.4",
+    "@unicitylabs/sphere-sdk": "0.14.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.4",
+    "express": "^5.1.0",
+    "pg": "^8.16.3",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.1",
+    "@types/pg": "^8.15.6",
+    "tsx": "^4.20.7",
+    "typescript": "^5.9.3"
   }
 }

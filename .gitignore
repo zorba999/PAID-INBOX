@@ -9,3 +9,6 @@ data/
 .env.*.local
 .DS_Store
 *.log
+
+# PGlite database and the escrow wallet keys
+/data/

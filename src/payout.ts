@@ -80,7 +80,13 @@ class SimulatedRail implements PayoutRail {
   }
 }
 
-/* ---------------------------------------------------------------- sphere */
+/* ---------------------------------------------------------------- sphere
+ *
+ * On serverless the escrow wallet re-derives from the mnemonic on every cold
+ * start and its dataDir cache does not survive, so the first settlement after
+ * an idle period pays a boot cost. Correctness is unaffected: the keys come
+ * from ESCROW_MNEMONIC and custody lives in wallet-api, not on disk.
+ * -------------------------------------------------------------------- */
 
 class SphereRail implements PayoutRail {
   readonly mode = "sphere" as const;

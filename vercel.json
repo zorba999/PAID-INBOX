@@ -1,0 +1,35 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": "frontend/dist",
+  "installCommand": "npm install",
+  "framework": null,
+  "rewrites": [
+    {
+      "comment": "BrowserRouter serves /inbox, /t/:id and the rest from the client, so every deep link falls back to index.html. /api and /assets are excluded: an API 404 must stay a 404, and a missing hashed bundle must not silently return HTML.",
+      "source": "/((?!api/|assets/|logo\\.svg).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/index.html",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    }
+  ],
+  "crons": [
+    {
+      "comment": "Settlement also runs opportunistically on API traffic. This is the backstop for a deployment nobody is using, and Hobby allows one run per day.",
+      "path": "/api/cron/settle",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

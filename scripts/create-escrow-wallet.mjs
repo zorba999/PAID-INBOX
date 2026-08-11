@@ -19,9 +19,9 @@ import { createNodeProviders } from "@unicitylabs/sphere-sdk/impl/nodejs";
 import { createWalletApiProviders } from "@unicitylabs/sphere-sdk/impl/shared/wallet-api";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SERVER_DIR = path.resolve(HERE, "..");
-const ENV_FILE = path.join(SERVER_DIR, ".env");
-const DATA_DIR = path.join(SERVER_DIR, "data", "escrow-wallet");
+const ROOT = path.resolve(HERE, "..");
+const ENV_FILE = path.join(ROOT, ".env");
+const DATA_DIR = path.join(ROOT, "data", "escrow-wallet");
 
 const NETWORK = process.env.NETWORK ?? "testnet2";
 const WALLET_API = process.env.WALLET_API_URL ?? "https://wallet-api.unicity.network";
@@ -36,8 +36,8 @@ const log = (...a) => console.log(" ", ...a);
 /** Merge keys into .env without clobbering anything already there. */
 function writeEnv(updates) {
   let text = fs.existsSync(ENV_FILE) ? fs.readFileSync(ENV_FILE, "utf8") : "";
-  if (!text && fs.existsSync(path.join(SERVER_DIR, ".env.example"))) {
-    text = fs.readFileSync(path.join(SERVER_DIR, ".env.example"), "utf8");
+  if (!text && fs.existsSync(path.join(ROOT, ".env.example"))) {
+    text = fs.readFileSync(path.join(ROOT, ".env.example"), "utf8");
   }
   for (const [key, value] of Object.entries(updates)) {
     const line = `${key}=${value}`;
@@ -110,7 +110,7 @@ try {
   log(`chain pubkey   ${identity.chainPubkey ?? "(pending)"}`);
   log(`data dir       ${DATA_DIR}`);
   console.log(
-    `\n  ESCROW_ADDRESS and ESCROW_MNEMONIC were written to server/.env (gitignored).` +
+    `\n  ESCROW_ADDRESS and ESCROW_MNEMONIC were written to .env (gitignored).` +
       `\n  The mnemonic is deliberately not printed here. Back up that file — it is the` +
       `\n  only way to reach the float.\n`,
   );

@@ -286,9 +286,12 @@ export function Landing() {
               <Button variant="primary" size="lg" onClick={wallet.connect} loading={wallet.isConnecting}>
                 Connect Sphere
               </Button>
-              <Button variant="ghost" size="lg" onClick={wallet.connectDemo}>
-                Try the demo
-              </Button>
+              {/* Only where the server will actually accept a demo signature. */}
+              {session.config?.allowDemo === true && (
+                <Button variant="ghost" size="lg" onClick={wallet.connectDemo}>
+                  Try the demo
+                </Button>
+              )}
             </div>
           )}
         </div>

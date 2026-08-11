@@ -24,15 +24,25 @@ export function ConnectPanel({ compact = false }: { compact?: boolean }) {
     );
   }
 
+  /* A demo signature proves nothing: it is a hash of the message and a public
+   * key, so anyone can mint one for anyone. The server refuses them unless
+   * ALLOW_DEMO is on, which no public deployment should do. Offering the button
+   * there would walk the user into a sign-in that cannot succeed, so it is
+   * shown only when the server says it will accept one. `undefined` means the
+   * config has not loaded yet; the button appears once it does. */
+  const demoAccepted = session.config?.allowDemo === true;
+
   if (!wallet.isConnected) {
     return (
       <div className={`connect ${compact ? "connect--compact" : ""}`}>
         <Button variant="primary" onClick={wallet.connect} loading={wallet.isConnecting}>
           Connect Sphere
         </Button>
-        <Button variant="ghost" size="sm" onClick={wallet.connectDemo} disabled={wallet.isConnecting}>
-          Try demo wallet
-        </Button>
+        {demoAccepted && (
+          <Button variant="ghost" size="sm" onClick={wallet.connectDemo} disabled={wallet.isConnecting}>
+            Try demo wallet
+          </Button>
+        )}
         {wallet.error && <p className="connect__error">{wallet.error}</p>}
       </div>
     );
